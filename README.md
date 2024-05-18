@@ -1,5 +1,7 @@
 # memehub-contract
 
+[中文](/memehub-contract/README.zh.md)
+
 ## Introduction
 
 Memehub is an innovative Memecoin launcher that allows users to launch a Memecoin with almost zero cost at the click of a button.
