@@ -1,6 +1,6 @@
 # memehub-contract
 
-[中文](/memehub-contract/README.zh.md)
+[中文](/README.zh.md)
 
 ## Introduction
 
