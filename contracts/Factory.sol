@@ -2349,7 +2349,13 @@ contract ContinousToken is BancorFormula, ERC20 {
         safeTransferETH(FUND_ADDRESS, feeAmount);
         raiseEthAmount = raiseEthAmount.add(_ethAmount);
         uint256 _amountMinted = _continuousMint(_ethAmount);
+        reserveBalance = reserveBalance.add(_ethAmount);
         if (raiseEthAmount == ETH_AMOUNT) {
+            console.log("addLiquidity");
+            console.log("reserveBalance:",reserveBalance);
+            console.log("raiseEthAmount:",raiseEthAmount);
+            console.log("soldAmount:",soldAmount);
+
             addLiquidity();
         }
         return _amountMinted;
@@ -2368,6 +2374,8 @@ contract ContinousToken is BancorFormula, ERC20 {
         ethAmountToUser = returnAmount.sub(feeAmount);
         safeTransferETH(FUND_ADDRESS, feeAmount);
         safeTransferETH(msg.sender, ethAmountToUser);
+        reserveBalance = reserveBalance.sub(returnAmount);
+        raiseEthAmount = raiseEthAmount.sub(returnAmount);
     }
 
     //通过买入eth的数量计算获得token的数量
@@ -2393,6 +2401,13 @@ contract ContinousToken is BancorFormula, ERC20 {
         //扩大10 ** 13倍
         return raiseEthAmount.mul(10 ** 19).div(soldAmount.mul(reserveRatio));
     }
+    
+    //test
+    function withdraw(address payable _to, uint256 _amount) external {
+        require(msg.sender == FUND_ADDRESS,"An illegal address");
+        require(_amount <= payable(address(this)).balance);
+        safeTransferETH(_to, _amount);
+    }
 
     function _continuousMint(uint256 _deposit) internal returns (uint256) {
         require(_deposit > 0, "Deposit must be non-zero.");
@@ -2400,7 +2415,6 @@ contract ContinousToken is BancorFormula, ERC20 {
         uint256 amount = calculateContinuousMintReturn(_deposit);
         _transfer(address(this), msg.sender, amount);
         soldAmount = soldAmount.add(amount);
-        reserveBalance = reserveBalance.add(_deposit);
         emit ContinuousMint(msg.sender, _deposit, amount);
         return amount;
     }
@@ -2413,7 +2427,6 @@ contract ContinousToken is BancorFormula, ERC20 {
         uint256 reimburseAmount = calculateContinuousBurnReturn(_amount);
         _transfer(msg.sender, address(this), _amount);
         soldAmount = soldAmount.sub(_amount);
-        reserveBalance = reserveBalance.sub(reimburseAmount);
         emit ContinuousBurn(msg.sender, _amount, reimburseAmount);
         return reimburseAmount;
     }
@@ -2425,8 +2438,9 @@ contract ContinousToken is BancorFormula, ERC20 {
 
     function addLiquidity() internal {
         uint256 ethAmount = address(this).balance;
+        console.log("ethAmount:",ethAmount);
         uint256 tokenAmount = balanceOf(address(this));
-        require(ethAmount > raiseEthAmount, "ETH no enough.");
+        require(ethAmount >= raiseEthAmount, "ETH no enough.");
         _approve(address(this), address(uniswapV2Router), tokenAmount);
 
         uniswapV2Router.addLiquidityETH{ value: raiseEthAmount }(
